@@ -1,7 +1,7 @@
 module Main (main) where
 
 import Data.ByteString.Lazy.Char8 (pack)
-import Parser (linenumber, parseElement)
+import Parser (linenumber, parseAttrValue, parseAttrs, parseElement)
 import Test.Tasty (TestTree, defaultMain, testGroup)
 import Test.Tasty.Golden (goldenVsString)
 
@@ -27,9 +27,9 @@ tests =
         , goldenVsString
             "AttrParse"
             "test/golden/parseAttrs.golden"
-            (pure $ pack $ show $ parseElement "genre=\"fiction\">")
+            (pure $ pack $ show $ parseAttrs "genre=\"fiction\">")
         , goldenVsString
             "AttrValue"
             "test/golden/parseAttrsValue.golden"
-            (pure $ pack $ show $ parseElement "\"fiction\">")
+            (pure $ pack $ show $ parseAttrValue "\"fiction\">")
         ]
