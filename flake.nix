@@ -23,6 +23,7 @@
 								hlint
 								pkg-config
 								zlib
+								haskell-language-server
 							];
 
 							shellHook = ''
