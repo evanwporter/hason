@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-module Types (Element (..)) where
+module Types (Element (..), Attr (..), QName (..)) where
 
 {- | Qualifying Name
 TODO: Prefix and URI
