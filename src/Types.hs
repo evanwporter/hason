@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-module Types (Element (..), Attr (..), QName (..)) where
+module Types (Element (..), Attr (..), QName (..), Content (..), OpenTag (..), CloseTag (..)) where
 
 {- | Qualifying Name
 TODO: Prefix and URI
@@ -31,8 +31,25 @@ data Attr = Attr
     }
     deriving (Show)
 
+data OpenTag = OpenTag
+    { openTagName :: QName
+    , openTagAttrs :: [Attr]
+    }
+    deriving (Show)
+
+data CloseTag = CloseTag
+    { closeTagName :: QName
+    }
+    deriving (Show)
+
+{- | XML Element
+An XML element is everything from (including) the element's start tag to (including) the element's end tag.
+> <price>29.99</price>
+https://www.w3schools.com/xmL/xml_elements.asp
+-}
 data Element = Element
-    { name :: QName
-    , attrs :: [Attr]
+    { ename :: QName
+    , eattrs :: [Attr]
+    , econtent :: Content
     }
     deriving (Show)

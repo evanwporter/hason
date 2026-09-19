@@ -1,0 +1,1 @@
+Right (OpenTag {openTagName = QName {qName = "book"}, openTagAttrs = [Attr {attrKey = "id", attrValue = "123"},Attr {attrKey = "genre", attrValue = "fiction"}]},"")

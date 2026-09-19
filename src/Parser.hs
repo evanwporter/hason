@@ -1,10 +1,20 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-module Parser (linenumber, parseElement, parseAttrs, parseAttrValue, LString, LChar, Line, XmlSource (..)) where
+module Parser (
+    linenumber,
+    parseElement,
+    parseOpenTag,
+    parseAttrs,
+    parseAttrValue,
+    LString,
+    LChar,
+    Line,
+    XmlSource (..),
+) where
 
 import Data.Char (isAlpha)
-import Types (Attr (..), Element (..), QName (..))
+import Types
 
 class XmlSource s where
     uncons :: s -> Maybe (Char, s)
@@ -35,50 +45,105 @@ type LChar = (Line, Char)
 
 type LString = [LChar]
 
-consumeChar :: Char -> String -> Maybe String
-consumeChar _ [] = Nothing
+consumeChar :: Char -> String -> Either String String
+consumeChar expected [] =
+    Left ("Unexpected end of input. Expected: " ++ [expected])
 consumeChar expected (x : xs)
-    | x == expected = Just xs
-    | otherwise = Nothing
+    | x == expected = Right xs
+    | otherwise = Left ("Expected " ++ [expected] ++ ", but found " ++ [x])
 
-parseName :: String -> Maybe (QName, String)
-parseName [] = Nothing
+parseName :: String -> Either String (QName, String)
+parseName [] = Left "Unexpected end of input while parsing name"
 parseName s =
-    let (name, rest) = span isAlpha s
-     in Just (QName{qName = name}, rest)
+    let (qname, rest) = span isAlpha s
+     in Right (QName{qName = qname}, rest)
 
-parseAttrKey :: String -> Maybe (String, String)
-parseAttrKey s = Just $ span isAlpha s
+parseAttrKey :: String -> Either String (String, String)
+parseAttrKey s = Right $ span isAlpha s
 
-parseAttrValue :: String -> Maybe (String, String)
+parseAttrValue :: String -> Either String (String, String)
 parseAttrValue s = do
     rest1 <- consumeChar '"' s -- Start with opening quote
     let (value, rest2) = span (/= '"') rest1 -- Parse until closing quote
     rest3 <- consumeChar '"' rest2 -- Consume closing quote
     return (value, rest3)
 
-parseAttrs :: String -> Maybe ([Attr], String)
-parseAttrs [] = Nothing
+parseAttrs :: String -> Either String ([Attr], String)
+parseAttrs [] = Left "Unexpected end of input while parsing attributes"
 parseAttrs input = do
     (key, rest1) <- parseAttrKey input
-    rest2 <- consumeChar '=' rest1
+    rest2 <-
+        case consumeChar '=' rest1 of
+            Left err ->
+                Left ("Expected '=' after attribute key '" ++ key ++ "': " ++ err)
+            Right rest ->
+                Right rest
     (value, rest3) <- parseAttrValue rest2
     case rest3 of
         ('>' : _) -> return ([Attr{attrKey = key, attrValue = value}], rest3)
         (' ' : rest4) -> do
             (moreAttrs, rest5) <- parseAttrs rest4
             return (Attr{attrKey = key, attrValue = value} : moreAttrs, rest5)
-        _ -> Nothing
+        _ -> Left "Expected '>' or another attribute"
 
-parseElement :: String -> Maybe (Element, String)
-parseElement [] = Nothing
-parseElement input = do
+parseOpenTag :: String -> Either String (OpenTag, String)
+parseOpenTag [] = Left "Unexpected end of input while parsing an opening tag"
+parseOpenTag input = do
     rest1 <- consumeChar '<' input
-    (ename, rest2) <- parseName rest1
+    (name, rest2) <- parseName rest1
     case rest2 of
-        '>' : rest3 -> return (Element{name = ename, attrs = []}, rest3)
+        '>' : rest3 -> do
+            return (OpenTag{openTagName = name, openTagAttrs = []}, rest3)
         ' ' : rest3 -> do
-            (eattrs, rest4) <- parseAttrs rest3
+            (attrs, rest4) <- parseAttrs rest3
             rest5 <- consumeChar '>' rest4
-            return (Element{name = ename, attrs = eattrs}, rest5)
-        _ -> Nothing
+            return (OpenTag{openTagName = name, openTagAttrs = attrs}, rest5)
+        _ -> Left "Expected '>' or another attribute"
+
+parseCloseTag :: String -> Either String (CloseTag, String)
+parseCloseTag [] = Left "Unexpected end of input while parsing a closing tag"
+parseCloseTag input = do
+    rest1 <- consumeChar '<' input
+    rest2 <- consumeChar '/' rest1
+    (name, rest3) <- parseName rest2
+    rest4 <- consumeChar '>' rest3
+    return (CloseTag{closeTagName = name}, rest4)
+
+{- | At every element I have the option to:
+(1) Parse the next set of characters as an element
+  (a) OpenTag
+  (b) CloseTag
+(2) Parse the next set of characters as a content string
+-}
+parseElement :: String -> Either String (Element, String)
+parseElement [] = Left "Unexpected end of input while parsing an element"
+parseElement input = do
+    -- OpenTag
+    (openTag, rest1) <- parseOpenTag input
+    (element, rest2) <- case rest1 of
+        '<' : '/' : _ ->
+            return
+                ( Element
+                    { ename = openTagName openTag
+                    , eattrs = openTagAttrs openTag
+                    , econtent = Text ""
+                    }
+                , rest1
+                )
+        '<' : _ -> do
+            -- matches another element
+            -- continue parsing from rest1
+            (element, rest3) <- parseElement rest1
+            return (element, rest3)
+        _ -> do
+            -- matches a string
+            let (cont, rest3) = span isAlpha rest1
+                element =
+                    Element
+                        { ename = openTagName openTag
+                        , eattrs = openTagAttrs openTag
+                        , econtent = Text cont
+                        }
+            return (element, rest3)
+    (_, rest3) <- parseCloseTag rest2
+    return (element, rest3)

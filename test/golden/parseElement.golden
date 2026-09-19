@@ -1,1 +1,1 @@
-Just (Element {name = QName {qName = "book"}, attrs = []},"")
+Right (Element {ename = QName {qName = "book"}, eattrs = [], econtent = Text ""},"")
