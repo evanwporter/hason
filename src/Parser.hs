@@ -118,10 +118,14 @@ parseCloseTag input = do
 parseElement :: String -> Either String (Element, String)
 parseElement [] = Left "Unexpected end of input while parsing an element"
 parseElement input = do
+    -- TODO: Handle lists of XML elements
+
     -- OpenTag
     (openTag, rest1) <- parseOpenTag input
     (element, rest2) <- case rest1 of
         '<' : '/' : _ ->
+            -- matches a closing tag--presumably the closing tag corresponding to
+            -- `openTag`
             return
                 ( Element
                     { ename = openTagName openTag
@@ -134,7 +138,13 @@ parseElement input = do
             -- matches another element
             -- continue parsing from rest1
             (element, rest3) <- parseElement rest1
-            return (element, rest3)
+            let ret =
+                    Element
+                        { ename = openTagName openTag
+                        , eattrs = openTagAttrs openTag
+                        , econtent = Elem element
+                        }
+            return (ret, rest3)
         _ -> do
             -- matches a string
             let (cont, rest3) = span isAlpha rest1

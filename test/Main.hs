@@ -39,6 +39,22 @@ tests =
                     "ElementParseWithAttrsAndContent"
                     "test/golden/parseElementWithAttrsAndContent.golden"
                     (pure $ pack $ show $ parseElement "<book id=\"123\" genre=\"fiction\">Content</book>")
+                , goldenVsString
+                    "ElementParseNested"
+                    "test/golden/parseElementNested.golden"
+                    (pure $ pack $ show $ parseElement "<book><ciao></ciao></book>")
+                , goldenVsString
+                    "ElementParseNestedSiblings"
+                    "test/golden/parseElementNestedSiblings.golden"
+                    (pure $ pack $ show $ parseElement "<book><ciao></ciao><hello></hello></book>")
+                , goldenVsString
+                    "ElementParseDeeplyNested"
+                    "test/golden/parseElementDeeplyNested.golden"
+                    (pure $ pack $ show $ parseElement "<book><chapter><section></section></chapter></book>")
+                , goldenVsString
+                    "ElementParseNestedWithAttrsAndContent"
+                    "test/golden/parseElementNestedWithAttrsAndContent.golden"
+                    (pure $ pack $ show $ parseElement "<book id=\"123\"><chapter name=\"intro\">Hello</chapter></book>")
                 ]
             , testGroup
                 "OpenTag Parsing Tests"

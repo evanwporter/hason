@@ -1,0 +1,1 @@
+Right (Element {ename = QName {qName = "book"}, eattrs = [], econtent = Elem (Element {ename = QName {qName = "ciao"}, eattrs = [], econtent = Text ""})},"")
