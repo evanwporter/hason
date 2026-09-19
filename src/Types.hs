@@ -16,7 +16,7 @@ data QName = QName
 "My Book" is the text content
 -}
 data Content
-    = Elem Element
+    = Elem [Element]
     | Text String
     deriving (Show)
 

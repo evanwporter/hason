@@ -142,7 +142,7 @@ parseElement input = do
                     Element
                         { ename = openTagName openTag
                         , eattrs = openTagAttrs openTag
-                        , econtent = Elem element
+                        , econtent = Elem [element]
                         }
             return (ret, rest3)
         _ -> do

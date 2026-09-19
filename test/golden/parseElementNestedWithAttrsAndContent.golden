@@ -1,1 +1,1 @@
-Right (Element {ename = QName {qName = "book"}, eattrs = [Attr {attrKey = "id", attrValue = "123"}], econtent = Elem (Element {ename = QName {qName = "chapter"}, eattrs = [Attr {attrKey = "name", attrValue = "intro"}], econtent = Text "Hello"})},"")
+Right (Element {ename = QName {qName = "book"}, eattrs = [Attr {attrKey = "id", attrValue = "123"}], econtent = Elem [Element {ename = QName {qName = "chapter"}, eattrs = [Attr {attrKey = "name", attrValue = "intro"}], econtent = Text "Hello"}]},"")
