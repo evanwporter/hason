@@ -109,6 +109,41 @@ parseCloseTag input = do
     rest4 <- consumeChar '>' rest3
     return (CloseTag{closeTagName = name}, rest4)
 
+parseElementBody :: OpenTag -> String -> Either String (Element, String)
+parseElementBody openTag input = case input of
+    '<' : '/' : _ ->
+        -- matches a closing tag--presumably the closing tag corresponding to
+        -- `openTag`
+        return
+            ( Element
+                { ename = openTagName openTag
+                , eattrs = openTagAttrs openTag
+                , econtent = Text ""
+                }
+            , input
+            )
+    '<' : _ -> do
+        -- matches another element
+        -- continue parsing from input
+        (element, rest3) <- parseElement input
+        let ret =
+                Element
+                    { ename = openTagName openTag
+                    , eattrs = openTagAttrs openTag
+                    , econtent = Elem [element]
+                    }
+        return (ret, rest3)
+    _ -> do
+        -- matches a string
+        let (cont, rest3) = span isAlpha input
+            element =
+                Element
+                    { ename = openTagName openTag
+                    , eattrs = openTagAttrs openTag
+                    , econtent = Text cont
+                    }
+        return (element, rest3)
+
 {- | At every element I have the option to:
 (1) Parse the next set of characters as an element
   (a) OpenTag
@@ -122,38 +157,6 @@ parseElement input = do
 
     -- OpenTag
     (openTag, rest1) <- parseOpenTag input
-    (element, rest2) <- case rest1 of
-        '<' : '/' : _ ->
-            -- matches a closing tag--presumably the closing tag corresponding to
-            -- `openTag`
-            return
-                ( Element
-                    { ename = openTagName openTag
-                    , eattrs = openTagAttrs openTag
-                    , econtent = Text ""
-                    }
-                , rest1
-                )
-        '<' : _ -> do
-            -- matches another element
-            -- continue parsing from rest1
-            (element, rest3) <- parseElement rest1
-            let ret =
-                    Element
-                        { ename = openTagName openTag
-                        , eattrs = openTagAttrs openTag
-                        , econtent = Elem [element]
-                        }
-            return (ret, rest3)
-        _ -> do
-            -- matches a string
-            let (cont, rest3) = span isAlpha rest1
-                element =
-                    Element
-                        { ename = openTagName openTag
-                        , eattrs = openTagAttrs openTag
-                        , econtent = Text cont
-                        }
-            return (element, rest3)
+    (element, rest2) <- parseElementBody openTag rest1
     (_, rest3) <- parseCloseTag rest2
     return (element, rest3)
