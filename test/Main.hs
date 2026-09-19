@@ -48,6 +48,10 @@ tests =
                     "test/golden/parseElementNestedSiblings.golden"
                     (pure $ pack $ show $ parseElement "<book><ciao></ciao><hello></hello></book>")
                 , goldenVsString
+                    "ElementParseNestedSiblingsWithContent"
+                    "test/golden/parseElementNestedSiblingsWithContent.golden"
+                    (pure $ pack $ show $ parseElement "<book><ciao>wassup</ciao><hello>ok</hello></book>")
+                , goldenVsString
                     "ElementParseDeeplyNested"
                     "test/golden/parseElementDeeplyNested.golden"
                     (pure $ pack $ show $ parseElement "<book><chapter><section></section></chapter></book>")

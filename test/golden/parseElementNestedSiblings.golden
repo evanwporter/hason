@@ -1,1 +1,1 @@
-Left "Expected /, but found h"
+Right (Element {ename = QName {qName = "book"}, eattrs = [], econtent = Elem [Element {ename = QName {qName = "ciao"}, eattrs = [], econtent = Text ""},Element {ename = QName {qName = "hello"}, eattrs = [], econtent = Text ""}]},"")

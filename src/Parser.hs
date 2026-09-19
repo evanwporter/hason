@@ -109,6 +109,16 @@ parseCloseTag input = do
     rest4 <- consumeChar '>' rest3
     return (CloseTag{closeTagName = name}, rest4)
 
+parseElementChildren :: String -> Either String ([Element], String)
+parseElementChildren input = case input of
+    '<' : '/' : _ ->
+        return ([], input)
+    '<' : _ -> do
+        (element, rest1) <- parseElement input
+        (elements, rest2) <- parseElementChildren rest1
+        return (element : elements, rest2)
+    _ -> Left "Expected child element or closing tag"
+
 parseElementBody :: OpenTag -> String -> Either String (Element, String)
 parseElementBody openTag input = case input of
     '<' : '/' : _ ->
@@ -125,24 +135,24 @@ parseElementBody openTag input = case input of
     '<' : _ -> do
         -- matches another element
         -- continue parsing from input
-        (element, rest3) <- parseElement input
+        (elements, rest1) <- parseElementChildren input
         let ret =
                 Element
                     { ename = openTagName openTag
                     , eattrs = openTagAttrs openTag
-                    , econtent = Elem [element]
+                    , econtent = Elem elements
                     }
-        return (ret, rest3)
+        return (ret, rest1)
     _ -> do
         -- matches a string
-        let (cont, rest3) = span isAlpha input
+        let (cont, rest1) = span isAlpha input
             element =
                 Element
                     { ename = openTagName openTag
                     , eattrs = openTagAttrs openTag
                     , econtent = Text cont
                     }
-        return (element, rest3)
+        return (element, rest1)
 
 {- | At every element I have the option to:
 (1) Parse the next set of characters as an element
@@ -153,10 +163,13 @@ parseElementBody openTag input = case input of
 parseElement :: String -> Either String (Element, String)
 parseElement [] = Left "Unexpected end of input while parsing an element"
 parseElement input = do
-    -- TODO: Handle lists of XML elements
-
     -- OpenTag
     (openTag, rest1) <- parseOpenTag input
+
     (element, rest2) <- parseElementBody openTag rest1
+
+    -- CloseTag
+    -- TODO: Check openTag and closeTag match
     (_, rest3) <- parseCloseTag rest2
+
     return (element, rest3)
