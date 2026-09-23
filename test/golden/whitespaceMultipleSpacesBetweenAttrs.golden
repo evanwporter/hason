@@ -1,0 +1,1 @@
+Right (Element {ename = QName {qName = "book"}, eattrs = [Attr {attrKey = "id", attrValue = "123"},Attr {attrKey = "genre", attrValue = "fiction"}], econtent = Text ""},"")

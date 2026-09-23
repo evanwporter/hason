@@ -13,13 +13,6 @@ tests =
     testGroup
         "Golden Tests"
         [ testGroup
-            "Line Number Tests"
-            [ goldenVsString
-                "LineNumber"
-                "test/golden/linenumber.golden"
-                (pure $ pack $ show $ linenumber 1 "hello\nworld\n\nThis\nis a thing   \n   \r\n That's happening")
-            ]
-        , testGroup
             "Parsing Tests"
             [ testGroup
                 "Element Parsing Tests"
@@ -81,6 +74,45 @@ tests =
                     "AttrValue"
                     "test/golden/parseAttrsValue.golden"
                     (pure $ pack $ show $ parseAttrValue "\"fiction\">")
+                ]
+            , testGroup
+                "Whitespace Parsing Tests"
+                [ goldenVsString
+                    "MultipleSpacesBetweenAttrs"
+                    "test/golden/whitespaceMultipleSpacesBetweenAttrs.golden"
+                    (pure $ pack $ show $ parseElement "<book id=\"123\"     genre=\"fiction\"></book>")
+                , goldenVsString
+                    "TabsBetweenAttrs"
+                    "test/golden/whitespaceTabsBetweenAttrs.golden"
+                    (pure $ pack $ show $ parseElement "<book id=\"123\"\t\tgenre=\"fiction\"></book>")
+                , goldenVsString
+                    "NewlinesBetweenAttrs"
+                    "test/golden/whitespaceNewlinesBetweenAttrs.golden"
+                    (pure $ pack $ show $ parseElement "<book id=\"123\"\n    genre=\"fiction\"></book>")
+                , goldenVsString
+                    "WhitespaceBetweenNestedElements"
+                    "test/golden/whitespaceBetweenNestedElements.golden"
+                    (pure $ pack $ show $ parseElement "<book>   <chapter></chapter>   </book>")
+                , goldenVsString
+                    "NewlineIndentationBetweenNestedElements"
+                    "test/golden/whitespaceNewlineIndentation.golden"
+                    (pure $ pack $ show $ parseElement "<book>\n    <chapter></chapter>\n</book>")
+                , goldenVsString
+                    "WhitespaceBeforeText"
+                    "test/golden/whitespaceBeforeText.golden"
+                    (pure $ pack $ show $ parseElement "<book>   Hello</book>")
+                , goldenVsString
+                    "WhitespaceAfterText"
+                    "test/golden/whitespaceAfterText.golden"
+                    (pure $ pack $ show $ parseElement "<book>Hello   </book>")
+                , goldenVsString
+                    "WhitespaceAroundText"
+                    "test/golden/whitespaceAroundText.golden"
+                    (pure $ pack $ show $ parseElement "<book>   Hello   </book>")
+                , goldenVsString
+                    "PrettyPrintedNestedElements"
+                    "test/golden/whitespacePrettyPrintedNested.golden"
+                    (pure $ pack $ show $ parseElement "<book>\n    <chapter>\n        <section></section>\n    </chapter>\n</book>")
                 ]
             ]
         ]

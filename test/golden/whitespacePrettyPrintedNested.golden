@@ -1,0 +1,1 @@
+Right (Element {ename = QName {qName = "book"}, eattrs = [], econtent = Elem [Element {ename = QName {qName = "chapter"}, eattrs = [], econtent = Elem [Element {ename = QName {qName = "section"}, eattrs = [], econtent = Text ""}]}]},"")

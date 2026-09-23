@@ -2,48 +2,14 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 
 module Parser (
-    linenumber,
     parseElement,
     parseOpenTag,
     parseAttrs,
     parseAttrValue,
-    LString,
-    LChar,
-    Line,
-    XmlSource (..),
 ) where
 
 import Data.Char (isAlpha)
 import Types
-
-class XmlSource s where
-    uncons :: s -> Maybe (Char, s)
-
-instance XmlSource String where
-    uncons (c : s) = Just (c, s)
-    uncons "" = Nothing
-
-{- | Converts a source string into a list of line-numbered characters.
-
-Starting from the given line number, each character is paired with
-its line number. Like so 'ab\nc' (1, 'a'), (1, 'b'), (2, 'c')
--}
-linenumber :: (XmlSource s) => Integer -> s -> LString
-linenumber n s = case uncons s of
-    Nothing -> []
-    Just ('\r', s') -> case uncons s' of
-        Just ('\n', s'') -> next s''
-        _ -> next s'
-    Just ('\n', s') -> next s'
-    Just (c, s') -> (n, c) : linenumber n s'
-  where
-    next s' = n' `seq` ((n, '\n') : linenumber n' s') where n' = n + 1
-
-type Line = Integer
-
-type LChar = (Line, Char)
-
-type LString = [LChar]
 
 consumeChar :: Char -> String -> Either String String
 consumeChar expected [] =
@@ -52,10 +18,15 @@ consumeChar expected (x : xs)
     | x == expected = Right xs
     | otherwise = Left ("Expected " ++ [expected] ++ ", but found " ++ [x])
 
+consumeWhitespace :: String -> String
+consumeWhitespace input = dropWhile (\p -> elem p " \t\n\r") input
+
 parseName :: String -> Either String (QName, String)
 parseName [] = Left "Unexpected end of input while parsing name"
 parseName s =
-    let (qname, rest) = span isAlpha s
+    -- consume the whitespace from the string then split up the string into
+    -- alpha characters and first not alpha character
+    let (qname, rest) = span isAlpha $ consumeWhitespace s
      in Right (QName{qName = qname}, rest)
 
 parseAttrKey :: String -> Either String (String, String)
@@ -81,8 +52,10 @@ parseAttrs input = do
     (value, rest3) <- parseAttrValue rest2
     case rest3 of
         ('>' : _) -> return ([Attr{attrKey = key, attrValue = value}], rest3)
-        (' ' : rest4) -> do
-            (moreAttrs, rest5) <- parseAttrs rest4
+        (' ' : _) -> do
+            -- Consume all the whitespace between the attributes and pass the result
+            -- to the `parseAttrs` so we can parse the next attribute
+            (moreAttrs, rest5) <- parseAttrs $ consumeWhitespace rest3
             return (Attr{attrKey = key, attrValue = value} : moreAttrs, rest5)
         _ -> Left "Expected '>' or another attribute"
 
@@ -94,10 +67,20 @@ parseOpenTag input = do
     case rest2 of
         '>' : rest3 -> do
             return (OpenTag{openTagName = name, openTagAttrs = []}, rest3)
-        ' ' : rest3 -> do
+        ' ' : _ -> do
+            -- TODO: Check if I need to match \n\t as valid spacing
+
+            -- Consume all the whitespace between the name and the next attribute
+            let rest3 = consumeWhitespace rest2
+
+            -- Parse attributes
             (attrs, rest4) <- parseAttrs rest3
             rest5 <- consumeChar '>' rest4
-            return (OpenTag{openTagName = name, openTagAttrs = attrs}, rest5)
+
+            -- TODO: Don't strip whitespace if its Text content
+            -- Parse all whitespace until next tag or piece of text
+            let rest6 = consumeWhitespace rest5
+            return (OpenTag{openTagName = name, openTagAttrs = attrs}, rest6)
         _ -> Left "Expected '>' or another attribute"
 
 parseCloseTag :: String -> Either String (CloseTag, String)
@@ -115,7 +98,7 @@ parseElementChildren input = case input of
         return ([], input)
     '<' : _ -> do
         (element, rest1) <- parseElement input
-        (elements, rest2) <- parseElementChildren rest1
+        (elements, rest2) <- parseElementChildren $ consumeWhitespace rest1
         return (element : elements, rest2)
     _ -> Left "Expected child element or closing tag"
 
@@ -146,13 +129,14 @@ parseElementBody openTag input = case input of
     _ -> do
         -- matches a string
         let (cont, rest1) = span isAlpha input
+            rest2 = consumeWhitespace rest1
             element =
                 Element
                     { ename = openTagName openTag
                     , eattrs = openTagAttrs openTag
                     , econtent = Text cont
                     }
-        return (element, rest1)
+        return (element, rest2)
 
 {- | At every element I have the option to:
 (1) Parse the next set of characters as an element
@@ -166,7 +150,7 @@ parseElement input = do
     -- OpenTag
     (openTag, rest1) <- parseOpenTag input
 
-    (element, rest2) <- parseElementBody openTag rest1
+    (element, rest2) <- parseElementBody openTag $ consumeWhitespace rest1
 
     -- CloseTag
     -- TODO: Check openTag and closeTag match
