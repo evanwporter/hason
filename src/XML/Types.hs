@@ -53,3 +53,12 @@ data Element = Element
     , econtent :: Content
     }
     deriving (Show)
+
+data Header = Header
+    { hattrs :: [Attr]
+    }
+
+data Document = Document
+    { dheader :: Header
+    , delement :: Element
+    }

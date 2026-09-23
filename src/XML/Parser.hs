@@ -3,8 +3,11 @@
 
 module XML.Parser where
 
-import Data.Char (isAlpha)
+import Data.Char (isAlpha, isAlphaNum)
 import XML.Types
+
+isValidNameChar :: Char -> Bool
+isValidNameChar c = isAlphaNum || c `elem` "abc"
 
 consumeChar :: Char -> String -> Either String String
 consumeChar expected [] =
@@ -12,6 +15,18 @@ consumeChar expected [] =
 consumeChar expected (x : xs)
     | x == expected = Right xs
     | otherwise = Left ("Expected " ++ [expected] ++ ", but found " ++ [x])
+
+consumeString :: String -> String -> Either String String
+-- Expected Empty String but nonempty input then we just return the input
+-- since we assume its already been consumed
+consumeString [] input = Right input
+-- Nonempty expected string but empty input
+consumeString expected [] =
+    Left ("Unexpected end of input. Expected: " ++ expected)
+consumeString (e : es) (x : xs)
+    | e == x = consumeString es xs
+    | otherwise =
+        Left ("Expected " ++ [e] ++ ", but found " ++ [x])
 
 consumeWhitespace :: String -> String
 consumeWhitespace input = dropWhile (\p -> elem p " \t\n\r") input
@@ -99,6 +114,7 @@ parseElementChildren input = case input of
 
 parseElementBody :: OpenTag -> String -> Either String (Element, String)
 parseElementBody openTag input = case input of
+    -- TODO: Check if whitespace is allowed between '<' and '/'
     '<' : '/' : _ ->
         -- matches a closing tag--presumably the closing tag corresponding to
         -- `openTag`
@@ -152,3 +168,40 @@ parseElement input = do
     (_, rest3) <- parseCloseTag rest2
 
     return (element, rest3)
+
+parseHeaderAttrs :: String -> Either String ([Attr], String)
+parseHeaderAttrs [] = Left "Unexpected end of input while parsing attributes"
+parseHeaderAttrs input = do
+    (key, rest1) <- parseAttrKey input
+    rest2 <-
+        case consumeChar '=' rest1 of
+            Left err ->
+                Left ("Expected '=' after attribute key '" ++ key ++ "': " ++ err)
+            Right rest ->
+                Right rest
+    (value, rest3) <- parseAttrValue rest2
+    case rest3 of
+        ('?' : '>' : _) -> return ([Attr{attrKey = key, attrValue = value}], rest3)
+        (' ' : _) -> do
+            -- Consume all the whitespace between the attributes and pass the result
+            -- to the `parseAttrs` so we can parse the next attribute
+            (moreAttrs, rest5) <- parseAttrs $ consumeWhitespace rest3
+            return (Attr{attrKey = key, attrValue = value} : moreAttrs, rest5)
+        _ -> Left "Expected '?>' or another attribute"
+
+parseHeader :: String -> Either String (Header, String)
+parseHeader [] =
+    Left "Header is unexpectedly empty"
+parseHeader input = do
+    rest1 <- consumeString "<?xml" input
+    let rest2 = consumeWhitespace rest1
+    (attrs, rest3) <- parseHeaderAttrs rest2
+    rest4 <- consumeString "?>" rest3
+    return (Header{hattrs = attrs}, rest4)
+
+parseDocument :: String -> Either String Document
+parseDocument [] = Left "Empty Document"
+parseDocument input = do
+    (header, rest1) <- parseHeader input
+    (element, _) <- parseElement rest1
+    return Document{dheader = header, delement = element}
