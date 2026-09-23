@@ -32,6 +32,8 @@ formatElements (element : elements) =
     formatElement element <> formatElements elements
 
 formatContent :: Content -> Builder
-formatContent content = case content of
-    Text text -> fromString text
-    Elem elements -> fromString "\n\t" <> formatElements elements <> fromString "\n"
+formatContent (Text text) = fromString text
+formatContent (Elem elements) =
+    singleton '\n'
+        <> formatElements elements
+        <> fromString "\n"
