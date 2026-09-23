@@ -163,6 +163,26 @@ tests =
                                             (Text "thing")
                                         ]
                     )
+                , goldenVsString
+                    "FormatNestedElements"
+                    "test/golden/formatNestedElements.golden"
+                    ( pure $
+                        pack $
+                            TL.unpack $
+                                toLazyText $
+                                    formatElements $
+                                        [ Element
+                                            (QName "book")
+                                            [Attr "id" "123"]
+                                            ( Elem
+                                                [ Element
+                                                    (QName "next")
+                                                    [Attr "id" "123"]
+                                                    (Text "thing")
+                                                ]
+                                            )
+                                        ]
+                    )
                 ]
             ]
         ]

@@ -34,4 +34,4 @@ formatElements (element : elements) =
 formatContent :: Content -> Builder
 formatContent content = case content of
     Text text -> fromString text
-    Elem elements -> formatElements elements
+    Elem elements -> fromString "\n\t" <> formatElements elements <> fromString "\n"
