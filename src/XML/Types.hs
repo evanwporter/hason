@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-module Types (Element (..), Attr (..), QName (..), Content (..), OpenTag (..), CloseTag (..)) where
+module XML.Types where
 
 {- | Qualifying Name
 TODO: Prefix and URI

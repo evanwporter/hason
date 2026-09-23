@@ -1,15 +1,10 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-module Parser (
-    parseElement,
-    parseOpenTag,
-    parseAttrs,
-    parseAttrValue,
-) where
+module XML.Parser where
 
 import Data.Char (isAlpha)
-import Types
+import XML.Types
 
 consumeChar :: Char -> String -> Either String String
 consumeChar expected [] =
@@ -140,8 +135,8 @@ parseElementBody openTag input = case input of
 
 {- | At every element I have the option to:
 (1) Parse the next set of characters as an element
-  (a) OpenTag
-  (b) CloseTag
+ (a) OpenTag
+ (b) CloseTag
 (2) Parse the next set of characters as a content string
 -}
 parseElement :: String -> Either String (Element, String)

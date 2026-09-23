@@ -1,9 +1,13 @@
 module Main (main) where
 
 import Data.ByteString.Lazy.Char8 (pack)
-import Parser
+import qualified Data.Text.Lazy as TL
+import Data.Text.Lazy.Builder (toLazyText)
 import Test.Tasty (TestTree, defaultMain, testGroup)
 import Test.Tasty.Golden (goldenVsString)
+import XML.Formatter
+import XML.Parser
+import XML.Types
 
 main :: IO ()
 main = defaultMain tests
@@ -113,6 +117,52 @@ tests =
                     "PrettyPrintedNestedElements"
                     "test/golden/whitespacePrettyPrintedNested.golden"
                     (pure $ pack $ show $ parseElement "<book>\n    <chapter>\n        <section></section>\n    </chapter>\n</book>")
+                ]
+            , testGroup
+                "Formatting Tests"
+                [ goldenVsString
+                    "FormatElement"
+                    "test/golden/formatElement.golden"
+                    ( pure $
+                        pack $
+                            TL.unpack $
+                                toLazyText $
+                                    formatElement $
+                                        Element (QName "book") [] (Text "")
+                    )
+                , goldenVsString
+                    "FormatElementWithAttrs"
+                    "test/golden/formatElementWithAttrs.golden"
+                    ( pure $
+                        pack $
+                            TL.unpack $
+                                toLazyText $
+                                    formatElement $
+                                        Element
+                                            (QName "book")
+                                            [ Attr "id" "123"
+                                            , Attr "genre" "fiction"
+                                            ]
+                                            (Text "")
+                    )
+                , goldenVsString
+                    "FormatElements"
+                    "test/golden/formatElements.golden"
+                    ( pure $
+                        pack $
+                            TL.unpack $
+                                toLazyText $
+                                    formatElements $
+                                        [ Element
+                                            (QName "book")
+                                            [Attr "id" "123"]
+                                            (Text "ciao")
+                                        , Element
+                                            (QName "next")
+                                            [Attr "id" "123"]
+                                            (Text "thing")
+                                        ]
+                    )
                 ]
             ]
         ]
